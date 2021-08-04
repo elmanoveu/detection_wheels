@@ -17,11 +17,12 @@ utils_path = os.path.join(get_parent_dir(1), "Utils")
 sys.path.append(src_path)
 sys.path.append(utils_path)
 
+
 import argparse
 from keras_yolo3.yolo import YOLO, detect_video, detect_webcam
 from PIL import Image
 from timeit import default_timer as timer
-from utils import load_extractor_model, load_features, parse_input, detect_object
+from utils import load_extractor_model, load_features, parse_input, detect_object, convert_predictions
 import test
 import utils
 import pandas as pd
@@ -29,6 +30,7 @@ import numpy as np
 from Get_File_Paths import GetFileList
 import random
 from Train_Utils import get_anchors
+from ellipse_detect_utlis import draw_ellipse
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -279,6 +281,13 @@ if __name__ == "__main__":
             )
         )
         out_df.to_csv(FLAGS.box, index=False)
+        print(convert_predictions(prediction))
+
+        has_ellipse, mask_with_ellipse,coord = draw_ellipse(img_path)
+        if has_ellipse:
+                print('Координаты центра X,Y ',coord[0],
+                'Длина большой и малой оси',coord[1],
+                'Угол между осями ',coord[2] )
 
     # This is for videos
     # for pre-recorded videos present in the Test_Images folder
