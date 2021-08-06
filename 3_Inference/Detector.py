@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 
 
 def get_parent_dir(n=1):
@@ -14,8 +15,11 @@ def get_parent_dir(n=1):
 src_path = os.path.join(get_parent_dir(1), "2_Training", "src")
 utils_path = os.path.join(get_parent_dir(1), "Utils")
 
+
+
 sys.path.append(src_path)
 sys.path.append(utils_path)
+
 
 
 import argparse
@@ -237,6 +241,7 @@ if __name__ == "__main__":
         text_out = ""
 
         # This is for images
+        all_img_predictions=[]
         for i, img_path in enumerate(input_image_paths):
             print(img_path)
             prediction, image = detect_object(
@@ -247,6 +252,7 @@ if __name__ == "__main__":
                 postfix=FLAGS.postfix,
             )
             y_size, x_size, _ = np.array(image).shape
+            all_img_predictions.append(prediction)
             for single_prediction in prediction:
                 out_df = out_df.append(
                     pd.DataFrame(
@@ -281,10 +287,12 @@ if __name__ == "__main__":
             )
         )
         out_df.to_csv(FLAGS.box, index=False)
-        print(convert_predictions(prediction))
-
-        has_ellipse, mask_with_ellipse,coord = draw_ellipse(img_path)
-        if has_ellipse:
+        new_frame_pred=convert_predictions(all_img_predictions)
+        for i,name_img in enumerate(input_image_paths):
+            print('nf',new_frame_pred[i+1])
+            has_ellipse, mask_with_ellipse,coord = draw_ellipse(name_img,new_frame_pred[i+1])
+            
+            if has_ellipse:
                 print('Координаты центра X,Y ',coord[0],
                 'Длина большой и малой оси',coord[1],
                 'Угол между осями ',coord[2] )
@@ -323,3 +331,39 @@ if __name__ == "__main__":
 
     # Close the current yolo session
     yolo.close_session()
+    if input_image_paths:
+        report_df = pd.DataFrame(
+        columns=[
+            "image",
+            "image_path",
+            "record_status"
+        ]
+    )
+
+        new_dir=detection_results_folder + '\\results\\'
+        try:
+            create_dir=os.mkdir(new_dir)
+        except FileExistsError:
+            if not os.path.exists(output_path):
+                new_f=new_dir + '\\ID_' +[os.path.basename(f) for f in input_image_paths[:5]][0]
+                create_dir=os.mkdir(new_f)
+                record_status=True
+                print('Succesfully',new_f)
+            else:
+                new_f=new_dir + '\\ID_' +[os.path.basename(f) for f in input_image_paths[:5]][0]
+                record_status=True
+                print('Succesfully')
+            
+        for i,name_img in enumerate(input_image_paths):
+            shutil.copy(input_image_paths[i],new_f)
+            print('Succesfully')
+            report_df=report_df.append(
+                    pd.DataFrame(
+                        [
+                            [
+                                os.path.basename(img_path.rstrip("\n")),
+                                new_f, record_status]]))
+                                
+        report_df.to_csv(new_dir+'Report.csv',mode='a',index=False)
+        
+    
