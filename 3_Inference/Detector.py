@@ -340,30 +340,27 @@ if __name__ == "__main__":
         ]
     )
 
-        new_dir=detection_results_folder + '\\results\\'
+        new_dir=detection_results_folder + '\\results\\' + '\\ID_' +[os.path.basename(f) for f in input_image_paths[:5]][0]
+        report_path=detection_results_folder + '\\results\\'
         try:
             create_dir=os.mkdir(new_dir)
+            record_status=True
         except FileExistsError:
-            if not os.path.exists(output_path):
-                new_f=new_dir + '\\ID_' +[os.path.basename(f) for f in input_image_paths[:5]][0]
-                create_dir=os.mkdir(new_f)
-                record_status=True
-                print('Succesfully',new_f)
-            else:
-                new_f=new_dir + '\\ID_' +[os.path.basename(f) for f in input_image_paths[:5]][0]
-                record_status=True
-                print('Succesfully')
+            record_status=True
+            pass
             
         for i,name_img in enumerate(input_image_paths):
-            shutil.copy(input_image_paths[i],new_f)
+            shutil.copy(input_image_paths[i],new_dir)
             print('Succesfully')
             report_df=report_df.append(
                     pd.DataFrame(
                         [
                             [
                                 os.path.basename(img_path.rstrip("\n")),
-                                new_f, record_status]]))
-                                
-        report_df.to_csv(new_dir+'Report.csv',mode='a',index=False)
-        
+                                new_dir, record_status]]))
+        report_df.to_json(report_path+'report.json', orient='records')
+        for filename in input_image_paths:
+            path_to_delete = os.path.join(image_test_folder, filename)
+            os.remove(path_to_delete)
+
     
